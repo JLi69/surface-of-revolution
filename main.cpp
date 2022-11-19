@@ -13,6 +13,7 @@
 #define DEFAULT_HEIGHT 600
 
 #define SPEED 8.0f
+#define ROTATION_SPEED 0.1f
 
 //Perspective matrix
 static glm::mat4 persp = glm::perspective(75.0f, (float)DEFAULT_WIDTH / (float)DEFAULT_HEIGHT, 0.1f, 1000.0f);
@@ -42,18 +43,26 @@ void handleKeyInput(GLFWwindow *win, int key, int scancode, int action, int mods
 		//W overrides S
 		case GLFW_KEY_W:
 			pressed[GLFW_KEY_S] = false;
+			pressed[GLFW_KEY_A] = false;
+			pressed[GLFW_KEY_D] = false;
 			break;	
 		//S overrides W
 		case GLFW_KEY_S:		
 			pressed[GLFW_KEY_W] = false;
+			pressed[GLFW_KEY_A] = false;
+			pressed[GLFW_KEY_D] = false;	
 			break;
 		//A overrides D
 		case GLFW_KEY_A:
 			pressed[GLFW_KEY_A] = false;
+			pressed[GLFW_KEY_W] = false;
+			pressed[GLFW_KEY_S] = false;	
 			break;	
 		//D overrides A
 		case GLFW_KEY_D:		
-			pressed[GLFW_KEY_D] = false;
+			pressed[GLFW_KEY_A] = false;
+			pressed[GLFW_KEY_W] = false;
+			pressed[GLFW_KEY_S] = false;	
 			break;
 		//Space overrides Shift
 		case GLFW_KEY_SPACE:	
@@ -65,6 +74,12 @@ void handleKeyInput(GLFWwindow *win, int key, int scancode, int action, int mods
 		case GLFW_KEY_RIGHT_SHIFT:
 			pressed[GLFW_KEY_SPACE] = false;
 			break;
+		//Release/Recapture mouse cursor
+		case GLFW_KEY_ESCAPE:
+			glfwGetInputMode(win, GLFW_CURSOR) == GLFW_CURSOR_DISABLED ?
+				glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL) :
+				glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);	
+			break;		
 		default: break;	
 		}
 
@@ -74,23 +89,62 @@ void handleKeyInput(GLFWwindow *win, int key, int scancode, int action, int mods
 		pressed[key] = false;
 
 	//Set camera speed
-	if(pressed[GLFW_KEY_W]) camMovement.z = -SPEED;
-	else if(pressed[GLFW_KEY_S]) camMovement.z = SPEED;
-	else camMovement.z = 0.0f;
-
-	if(pressed[GLFW_KEY_A]) camMovement.x = SPEED;
-	else if(pressed[GLFW_KEY_D]) camMovement.x = -SPEED;
-	else camMovement.x = 0.0f;
+	if(pressed[GLFW_KEY_W]) 
+	{	
+		camMovement.z = -SPEED * cosf(-camRot.y);
+		camMovement.x = -SPEED * sinf(-camRot.y);
+	}	
+	else if(pressed[GLFW_KEY_S]) 
+	{
+		camMovement.z = SPEED * cosf(-camRot.y);
+		camMovement.x = SPEED * sinf(-camRot.y);
+	}
+	else if(pressed[GLFW_KEY_A]) 
+	{	
+		camMovement.z = SPEED * cosf(-camRot.y + PI / 2.0f);
+		camMovement.x = SPEED * sinf(-camRot.y + PI / 2.0f);
+	}	
+	else if(pressed[GLFW_KEY_D]) 
+	{
+		camMovement.z = SPEED * cosf(-camRot.y - PI / 2.0f);
+		camMovement.x = SPEED * sinf(-camRot.y - PI / 2.0f);
+	}
+	else
+	{
+		camMovement.z = 0.0f;
+		camMovement.x = 0.0f;
+	}
 
 	if(pressed[GLFW_KEY_SPACE]) camMovement.y = -SPEED;	
 	else if(pressed[GLFW_KEY_LEFT_SHIFT] || pressed[GLFW_KEY_RIGHT_SHIFT]) camMovement.y = SPEED;
 	else camMovement.y = 0.0f;
 }
 
+void cursorPositionCallback(GLFWwindow* win, double x, double y)
+{
+	static double xpos = x, ypos = y;	
+
+	if(glfwGetInputMode(win, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+	{
+		camRotSpeed.y = -(x - xpos) * ROTATION_SPEED;
+		camRotSpeed.x = -(y - ypos) * ROTATION_SPEED;
+	}
+		
+	xpos = x;
+	ypos = y;
+}
+
 void updateCamera(float secondsPerFrame)
 {
 	//Move camera
 	camPos += camMovement * secondsPerFrame;
+	//Rotate camera
+	camRot += camRotSpeed * secondsPerFrame;
+
+	if(camRot.x > PI / 2.0f)
+		camRot.x = PI / 2.0f;
+	else if(camRot.x < -PI / 2.0f)
+		camRot.x = -PI / 2.0f;
 }
 
 int main()
@@ -102,6 +156,9 @@ int main()
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 	glfwSetWindowSizeCallback(win, handleWinResize);
 	glfwSetKeyCallback(win, handleKeyInput);
+
+	//Grab and hide cursor
+	glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	//Create cylinder
 	GLUtil::BufferValues cylinderObj = GLUtil::generateCylinder(48);
@@ -129,12 +186,18 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT);
 		glClear(GL_DEPTH_BUFFER_BIT);
 		
-		modelViewMat = glm::translate(glm::mat4(1.0f), -camPos);
+		modelViewMat = glm::rotate(glm::mat4(1.0f), camRot.x, glm::vec3(1.0f, 0.0f, 0.0f)) *	   
+					   glm::rotate(glm::mat4(1.0f), camRot.y, glm::vec3(0.0f, 1.0f, 0.0f)) *
+					   glm::translate(glm::mat4(1.0f), -camPos);
 		glUniformMatrix4fv(program.uniforms["uPerspMat"], 1, false, glm::value_ptr(persp));	
 		glUniformMatrix4fv(program.uniforms["uMVMat"], 1, false, glm::value_ptr(modelViewMat));
 		glDrawArraysInstanced(GL_TRIANGLES, 0, cylinderObj.verts.size(), 2560);
 	
 		updateCamera(secondsPerFrame);
+
+		double cursorX, cursorY;
+		glfwGetCursorPos(win, &cursorX, &cursorY);
+		cursorPositionCallback(win, cursorX, cursorY);
 
 		GLUtil::outputGLErrors();
 		glfwPollEvents();

@@ -23,15 +23,17 @@ float fx(float y)
 	//return y * y;
 
 	//Parabola
-	return sqrt(y);
+	//return sqrt(y);
 	
 	//Cone	
-	//return y;
+	return y;
 	
 	//Trig functions generate fun stuff	
 	//return sin(y);
 	//return cos(sin(y * y)) * y;
 	//return 1.0 / sin(y); 
+
+	//return 1.0 / y;
 }
 
 //Main function
