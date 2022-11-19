@@ -46,6 +46,8 @@ namespace GLUtil
 
 	//Generate cylinder
 	BufferValues generateCylinder(int prec);
+	//Generate line
+	BufferValues generateLine();
 
 #ifdef TEST
 	//Test rectangle

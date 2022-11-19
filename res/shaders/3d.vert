@@ -1,5 +1,7 @@
 #version 460
 
+#define PI 3.1415926535
+
 layout(location = 0) in vec4 pos;
 
 uniform mat4 uPerspMat;
@@ -8,6 +10,8 @@ uniform mat4 uMVMat = mat4(1.0);
 uniform float uPrec = 0.001;
 
 out vec4 rainbow;
+
+out float varyingAngle;
 
 //x = f(y)
 float fx(float y)
@@ -26,14 +30,21 @@ float fx(float y)
 	//return sqrt(y);
 	
 	//Cone	
-	return y;
+	//return y;
 	
 	//Trig functions generate fun stuff	
 	//return sin(y);
 	//return cos(sin(y * y)) * y;
 	//return 1.0 / sin(y); 
+	//return asin(y);
 
 	//return 1.0 / y;
+
+	//Peicewise function for fun
+	/*if(y < 1.0)
+		return sqrt(y);
+	else if(y >= 1.0)
+		return y;*/
 }
 
 //Main function
@@ -55,4 +66,13 @@ void main()
 	
 	//Rainbow color	
 	rainbow = vec4(transformed.xyz * 0.5 + vec3(0.5, 0.5, 0.5), 1.0) * 0.5 + vec4(0.5, 0.5, 0.5, 0.5);
+
+	//Calculate angle
+	varyingAngle = atan(pos.z / pos.x);
+	if(pos.z < 0.0 && pos.x > 0.0)
+		varyingAngle += 2 * PI;
+	else if(pos.z > 0.0 && pos.x < 0.0)
+		varyingAngle += PI;
+	else if(pos.z < 0.0 && pos.x < 0.0)
+		varyingAngle += PI;
 }

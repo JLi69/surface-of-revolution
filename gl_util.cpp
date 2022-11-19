@@ -121,6 +121,19 @@ void GLUtil::outputGLErrors()
 		std::cout << "OpenGL Error: " << err << '\n';
 }
 
+GLUtil::BufferValues GLUtil::generateLine()
+{
+	GLUtil::BufferValues line;
+
+	//Generate vertices
+	line.verts = {
+		1.0f, 1.0f, 0.0f,	
+		1.0f, 0.0f, 0.0f
+	};
+
+	return line;
+}
+
 #ifdef TEST
 unsigned int GLUtil::createTestRectangle()
 {

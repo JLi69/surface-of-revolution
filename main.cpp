@@ -15,6 +15,15 @@
 #define SPEED 8.0f
 #define ROTATION_SPEED 0.1f
 
+#define ANIMATION_SPEED 1.0f
+
+enum
+{
+	NORMAL,
+	FLAT,
+	ANIMATION
+};
+
 //Perspective matrix
 static glm::mat4 persp = glm::perspective(75.0f, (float)DEFAULT_WIDTH / (float)DEFAULT_HEIGHT, 0.1f, 1000.0f);
 //Model view matrix
@@ -24,6 +33,8 @@ static glm::vec3 camPos = glm::vec3(0.0f, -1.0f, 20.0f);
 static glm::vec3 camMovement = glm::vec3(0.0f, 0.0f, 0.0f);
 static glm::vec3 camRot = glm::vec3(0.0f, 0.0f, 0.0f); //Rotation about axes stored as radians
 static glm::vec3 camRotSpeed = glm::vec3(0.0f, 0.0f, 0.0f);
+static int viewMode = NORMAL;
+static float maxAngle = 999.0f;
 
 void handleWinResize(GLFWwindow *win, int newWidth, int newHeight)
 {
@@ -79,7 +90,21 @@ void handleKeyInput(GLFWwindow *win, int key, int scancode, int action, int mods
 			glfwGetInputMode(win, GLFW_CURSOR) == GLFW_CURSOR_DISABLED ?
 				glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL) :
 				glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);	
+			camRotSpeed = glm::vec3(0.0f, 0.0f, 0.0f);	
 			break;		
+		//Switch mode
+		case GLFW_KEY_1:
+			viewMode = NORMAL;	
+			maxAngle = 999.0f;
+			break;
+		case GLFW_KEY_2:
+			viewMode = FLAT;	
+			maxAngle = 999.0f;
+			break;	
+		case GLFW_KEY_3:
+			viewMode = ANIMATION;
+			maxAngle = 0.0f;
+			break;	
 		default: break;	
 		}
 
@@ -163,19 +188,28 @@ int main()
 	//Create cylinder
 	GLUtil::BufferValues cylinderObj = GLUtil::generateCylinder(48);
 	GLUtil::Buffers cylinderBuffers = GLUtil::genVertBuffers(cylinderObj);
-	GLUtil::bindBuffers(cylinderBuffers);
+
+	GLUtil::BufferValues lineObj = GLUtil::generateLine();
+	GLUtil::Buffers lineBuffers = GLUtil::genVertBuffers(lineObj);
 
 	//Create shader program
 	GLUtil::ShaderProgram program;
 	program.id = GLUtil::createShaderProgram("res/shaders/3d.vert", "res/shaders/rainbow.frag");
 	program.uniforms["uPerspMat"] = glGetUniformLocation(program.id, "uPerspMat");
 	program.uniforms["uMVMat"] = glGetUniformLocation(program.id, "uMVMat");	
-	glUseProgram(program.id);
+	program.uniforms["uMaxAngle"] = glGetUniformLocation(program.id, "uMaxAngle");
+
+	GLUtil::ShaderProgram simple3d;
+	simple3d.id = GLUtil::createShaderProgram("res/shaders/simple3d.vert", "res/shaders/simple.frag");
+	simple3d.uniforms["uPerspMat"] = glGetUniformLocation(simple3d.id, "uPerspMat");
+	simple3d.uniforms["uMVMat"] = glGetUniformLocation(simple3d.id, "uMVMat");	
+	simple3d.uniforms["uCol"] = glGetUniformLocation(simple3d.id, "uCol");
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);	
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	std::chrono::time_point<std::chrono::system_clock> start, end;		
 	static float secondsPerFrame = 1.0f;
@@ -185,14 +219,87 @@ int main()
 
 		glClear(GL_COLOR_BUFFER_BIT);
 		glClear(GL_DEPTH_BUFFER_BIT);
-		
+
+		GLUtil::bindBuffers(cylinderBuffers);
+		//Draw axes
+		//Y axis	
+		glUseProgram(simple3d.id);
 		modelViewMat = glm::rotate(glm::mat4(1.0f), camRot.x, glm::vec3(1.0f, 0.0f, 0.0f)) *	   
 					   glm::rotate(glm::mat4(1.0f), camRot.y, glm::vec3(0.0f, 1.0f, 0.0f)) *
-					   glm::translate(glm::mat4(1.0f), -camPos);
-		glUniformMatrix4fv(program.uniforms["uPerspMat"], 1, false, glm::value_ptr(persp));	
-		glUniformMatrix4fv(program.uniforms["uMVMat"], 1, false, glm::value_ptr(modelViewMat));
-		glDrawArraysInstanced(GL_TRIANGLES, 0, cylinderObj.verts.size(), 2560);
-	
+					   glm::translate(glm::mat4(1.0f), -camPos) *
+					   glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -500.0f, 0.0f)) * 
+					   glm::scale(glm::mat4(1.0f), glm::vec3(0.02f, 1000.0f, 0.02f));
+		glUniformMatrix4fv(simple3d.uniforms["uPerspMat"], 1, false, glm::value_ptr(persp));	
+		glUniformMatrix4fv(simple3d.uniforms["uMVMat"], 1, false, glm::value_ptr(modelViewMat));
+		glUniform4f(simple3d.uniforms["uCol"], 1.0f, 0.0f, 0.0f, 1.0f);
+		glDrawArrays(GL_TRIANGLES, 0, cylinderObj.verts.size());
+
+		//Z axis
+		modelViewMat = glm::rotate(glm::mat4(1.0f), camRot.x, glm::vec3(1.0f, 0.0f, 0.0f)) *	   
+					   glm::rotate(glm::mat4(1.0f), camRot.y, glm::vec3(0.0f, 1.0f, 0.0f)) *
+					   glm::translate(glm::mat4(1.0f), -camPos) *
+					   glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -500.0f)) *
+					   glm::rotate(glm::mat4(1.0f), PI / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)) *
+					   glm::scale(glm::mat4(1.0f), glm::vec3(0.02f, 1000.0f, 0.02f));
+		glUniformMatrix4fv(simple3d.uniforms["uMVMat"], 1, false, glm::value_ptr(modelViewMat));
+		glUniform4f(simple3d.uniforms["uCol"], 0.0f, 1.0f, 0.0f, 1.0f);
+		glDrawArrays(GL_TRIANGLES, 0, cylinderObj.verts.size());
+
+		//X axis
+		modelViewMat = glm::rotate(glm::mat4(1.0f), camRot.x, glm::vec3(1.0f, 0.0f, 0.0f)) *	   
+					   glm::rotate(glm::mat4(1.0f), camRot.y, glm::vec3(0.0f, 1.0f, 0.0f)) *
+					   glm::translate(glm::mat4(1.0f), -camPos) *
+					   glm::translate(glm::mat4(1.0f), glm::vec3(500.0f, 0.0f, 0.0f)) *
+					   glm::rotate(glm::mat4(1.0f), PI / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)) *
+					   glm::rotate(glm::mat4(1.0f), PI / 2.0f, glm::vec3(0.0f, 0.0f, 1.0f)) *	 
+					   glm::scale(glm::mat4(1.0f), glm::vec3(0.02f, 1000.0f, 0.02f));
+		glUniformMatrix4fv(simple3d.uniforms["uMVMat"], 1, false, glm::value_ptr(modelViewMat));
+		glUniform4f(simple3d.uniforms["uCol"], 0.0f, 0.0f, 1.0f, 1.0f);
+		glDrawArrays(GL_TRIANGLES, 0, cylinderObj.verts.size());
+		
+		switch(viewMode)
+		{
+		case NORMAL:
+			//Draw the surface of rotation	
+			glUseProgram(program.id);
+			modelViewMat = glm::rotate(glm::mat4(1.0f), camRot.x, glm::vec3(1.0f, 0.0f, 0.0f)) *	   
+						   glm::rotate(glm::mat4(1.0f), camRot.y, glm::vec3(0.0f, 1.0f, 0.0f)) *
+						   glm::translate(glm::mat4(1.0f), -camPos);
+			glUniform1f(program.uniforms["uMaxAngle"], maxAngle);	
+			glUniformMatrix4fv(program.uniforms["uPerspMat"], 1, false, glm::value_ptr(persp));	
+			glUniformMatrix4fv(program.uniforms["uMVMat"], 1, false, glm::value_ptr(modelViewMat));
+			glDrawArraysInstanced(GL_TRIANGLES, 0, cylinderObj.verts.size(), 2560);
+			break;	
+		case FLAT:
+			//Draw original graph
+			glUseProgram(program.id);
+			GLUtil::bindBuffers(lineBuffers);
+			modelViewMat = glm::rotate(glm::mat4(1.0f), camRot.x, glm::vec3(1.0f, 0.0f, 0.0f)) *	   
+						   glm::rotate(glm::mat4(1.0f), camRot.y, glm::vec3(0.0f, 1.0f, 0.0f)) *
+						   glm::translate(glm::mat4(1.0f), -camPos);			
+			glUniform1f(program.uniforms["uMaxAngle"], maxAngle);		
+			glUniformMatrix4fv(program.uniforms["uPerspMat"], 1, false, glm::value_ptr(persp));	
+			glUniformMatrix4fv(program.uniforms["uMVMat"], 1, false, glm::value_ptr(modelViewMat));
+			glDrawArraysInstanced(GL_LINES, 0, lineObj.verts.size(), 2560);
+			break;	
+		case ANIMATION:
+			//Original graph rotates around
+			maxAngle += ANIMATION_SPEED * secondsPerFrame;
+			if(maxAngle > 3 * PI)
+				maxAngle = 0.0f;
+			glUseProgram(program.id);
+			modelViewMat = glm::rotate(glm::mat4(1.0f), camRot.x, glm::vec3(1.0f, 0.0f, 0.0f)) *	   
+						   glm::rotate(glm::mat4(1.0f), camRot.y, glm::vec3(0.0f, 1.0f, 0.0f)) *
+						   glm::translate(glm::mat4(1.0f), -camPos);	
+			glUniform1f(program.uniforms["uMaxAngle"], maxAngle);	
+			glUniformMatrix4fv(program.uniforms["uPerspMat"], 1, false, glm::value_ptr(persp));	
+			glUniformMatrix4fv(program.uniforms["uMVMat"], 1, false, glm::value_ptr(modelViewMat));
+			glDrawArraysInstanced(GL_TRIANGLES, 0, cylinderObj.verts.size(), 2560);	
+			break;
+		}	
+
+		//TODO: Show approximation for how to calculate volume	
+
 		updateCamera(secondsPerFrame);
 
 		double cursorX, cursorY;
