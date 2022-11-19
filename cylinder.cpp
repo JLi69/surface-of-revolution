@@ -9,7 +9,7 @@ GLUtil::BufferValues GLUtil::generateCylinder(int prec)
 	GLUtil::BufferValues cylinder;
 
 	//Generate vertices
-	glm::vec3 topPoint(1.0f, 1.0f, 0.0f), botPoint(1.0f, -1.0f, 0.0f);
+	glm::vec3 topPoint(1.0f, 1.0f, 0.0f), botPoint(1.0f, 0.0f, 0.0f);
 	float rotationRad = 2.0f * PI / (float)prec;
 
 	for(int i = 0; i < prec; i++)

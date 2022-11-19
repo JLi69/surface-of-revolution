@@ -1,5 +1,5 @@
 CPP=g++
-LD_FLAGS=-lglfw3 -lm -lGL -Lglad -lglad
+LD_FLAGS=-lglfw3 -lm -lGL -Lglad -lglad -static-libgcc -static-libstdc++
 CPP_FLAGS=-O2 -Iglad/include -Iglm
 SRC=$(wildcard *.cpp)
 OBJ=$(SRC:%.cpp=%.o)
@@ -19,3 +19,7 @@ run:
 
 clean:
 	rm -f ${OBJ} ${BIN_NAME}
+
+clean_all:
+	rm -f ${OBJ} ${BIN_NAME}
+	rm -f glad/libglad.a
