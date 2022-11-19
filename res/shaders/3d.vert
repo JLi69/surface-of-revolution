@@ -7,7 +7,7 @@ layout(location = 0) in vec4 pos;
 uniform mat4 uPerspMat;
 uniform mat4 uMVMat = mat4(1.0);
 
-uniform float uPrec = 0.001;
+float uPrec = 0.001;
 
 out vec4 rainbow;
 
@@ -27,7 +27,7 @@ float fx(float y)
 	//return y * y;
 
 	//Parabola
-	//return sqrt(y);
+	return sqrt(y);
 	
 	//Cone	
 	//return y;
@@ -37,6 +37,7 @@ float fx(float y)
 	//return cos(sin(y * y)) * y;
 	//return 1.0 / sin(y); 
 	//return asin(y);
+	//return y * y * sin(y * 5.0);
 
 	//return 1.0 / y;
 

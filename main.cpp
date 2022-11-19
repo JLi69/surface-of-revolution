@@ -298,8 +298,6 @@ int main()
 			break;
 		}	
 
-		//TODO: Show approximation for how to calculate volume	
-
 		updateCamera(secondsPerFrame);
 
 		double cursorX, cursorY;
