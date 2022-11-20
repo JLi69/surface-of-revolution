@@ -12,13 +12,15 @@ GLUtil::BufferValues GLUtil::generateCylinder(int prec)
 	glm::vec3 topPoint(1.0f, 1.0f, 0.0f), botPoint(1.0f, 0.0f, 0.0f);
 	float rotationRad = 2.0f * PI / (float)prec;
 
+	glm::vec3 centerTop(0.0f, 1.0f, 0.0f), centerBot(0.0f, 0.0f, 0.0f);
+
 	for(int i = 0; i < prec; i++)
 	{
 		//Rotate the points about the y axis
 		glm::vec3 topPoint2 = glm::vec3(glm::vec4(topPoint, 1.0f) * glm::rotate(glm::mat4(1.0f), rotationRad, glm::vec3(0.0f, 1.0f, 0.0f))),
 				  botPoint2 = glm::vec3(glm::vec4(botPoint, 1.0f) * glm::rotate(glm::mat4(1.0f), rotationRad, glm::vec3(0.0f, 1.0f, 0.0f)));
 
-		glm::vec3 tris[6] = 
+		glm::vec3 tris[] = 
 		{
 			//Triangle 1
 			topPoint,
@@ -27,7 +29,16 @@ GLUtil::BufferValues GLUtil::generateCylinder(int prec)
 			//Triangle 2
 			topPoint, 
 			botPoint2,
-			topPoint2
+			topPoint2,
+			/*		
+			topPoint2,
+			centerTop,	
+			topPoint,
+	
+			botPoint2,
+			centerTop,
+			botPoint,
+			*/	
 		};
 
 		for(int j = 0; j < 6; j++)

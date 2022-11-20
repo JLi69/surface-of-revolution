@@ -11,7 +11,7 @@ float uPrec = 0.001;
 
 out vec4 rainbow;
 
-out float varyingAngle;
+out vec4 varyingPos;
 
 //x = f(y)
 float fx(float y)
@@ -21,7 +21,7 @@ float fx(float y)
 	//Cylinder	
 	//return 1;
 	
-	//Sphere
+	//Sphere 
 	//return sqrt(4 - y * y);	
 	
 	//return y * y;
@@ -68,12 +68,5 @@ void main()
 	//Rainbow color	
 	rainbow = vec4(transformed.xyz * 0.5 + vec3(0.5, 0.5, 0.5), 1.0) * 0.5 + vec4(0.5, 0.5, 0.5, 0.5);
 
-	//Calculate angle
-	varyingAngle = atan(pos.z / pos.x);
-	if(pos.z < 0.0 && pos.x > 0.0)
-		varyingAngle += 2 * PI;
-	else if(pos.z > 0.0 && pos.x < 0.0)
-		varyingAngle += PI;
-	else if(pos.z < 0.0 && pos.x < 0.0)
-		varyingAngle += PI;
+	varyingPos = pos;
 }
