@@ -39,6 +39,11 @@ static float maxAngle = 999.0f;
 void handleWinResize(GLFWwindow *win, int newWidth, int newHeight)
 {
 	glViewport(0, 0, newWidth, newHeight);
+	if(newHeight == 0)
+	{
+		persp = glm::perspective(75.0f, 1.0f, 0.1f, 1000.0f);
+		return;
+	}
 	persp = glm::perspective(75.0f, (float)newWidth / (float)newHeight, 0.1f, 1000.0f);
 }
 
